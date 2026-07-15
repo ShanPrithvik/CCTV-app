@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const BASE_URL = "http://localhost:5000/api/camera";
+import { CAMERA_BASE_URL as BASE_URL } from "./config";
 
 export const fetchCameras = async () => {
   const response = await axios.get(BASE_URL);

@@ -7,9 +7,9 @@ const ROISelector = ({ imageUrl, imageWidth, imageHeight, initialROI = [], model
 
   // Sync local points if parent-provided ROI changes
   useEffect(() => {
-    if (JSON.stringify(points) !== JSON.stringify(initialROI)) {
-      setPoints(initialROI);
-    }
+    setPoints((current) =>
+      JSON.stringify(current) !== JSON.stringify(initialROI) ? initialROI : current
+    );
   }, [initialROI]);
 
   // Draw image and ROI overlay

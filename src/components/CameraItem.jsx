@@ -16,12 +16,15 @@ import SaveIcon from "@mui/icons-material/Save";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DeleteIcon from "@mui/icons-material/Delete";
 import LinkIcon from "@mui/icons-material/Link";
+import VideocamIcon from "@mui/icons-material/Videocam";
 import { useNavigate } from "react-router-dom";
 import ToastNotification from "./ToastNotification";
+import LiveView from "./LiveView";
 
 const CameraItem = ({ camera, setCameras, cameras }) => {
   const [name, setName] = useState(camera.camera_name || "");
   const [rtsp, setRtsp] = useState(camera.rtsp_url);
+  const [showLiveView, setShowLiveView] = useState(false);
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -201,6 +204,15 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
                     Rule Config
                   </Button>
                   <Button
+                    variant={showLiveView ? "contained" : "outlined"}
+                    color="primary"
+                    startIcon={<VideocamIcon />}
+                    onClick={() => setShowLiveView((v) => !v)}
+                    sx={{ whiteSpace: "nowrap", minWidth: 120, flexShrink: 0 }}
+                  >
+                    {showLiveView ? "Hide Live" : "Live View"}
+                  </Button>
+                  <Button
                     variant="outlined"
                     color="error"
                     startIcon={<DeleteIcon />}
@@ -212,6 +224,8 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
                 </>
               )}
             </Box>
+
+            {!isNew && showLiveView && <LiveView cameraId={camera.id} />}
           </Stack>
         </CardContent>
       </Card>

@@ -24,6 +24,7 @@ import {
   deleteRule,
 } from "../api/ruleConfigApi";
 import { fetchCamera } from "../api/camerasApi";
+import { cameraViewUrl } from "../api/config";
 import ROISelector from "../components/ROISelector";
 import ToastNotification from "../components/ToastNotification";
 import { useParams, useLocation } from "react-router-dom";
@@ -81,7 +82,7 @@ const RuleConfigPage = () => {
       try {
         const cameraDataRaw = await fetchCamera(cameraId);
         const cameraData = {
-          imageUrl: `http://localhost:5000/camera-view/${cameraDataRaw.camera_name}.png`,
+          imageUrl: cameraViewUrl(cameraDataRaw.camera_name),
           width: 1280,
           height: 720,
         };
