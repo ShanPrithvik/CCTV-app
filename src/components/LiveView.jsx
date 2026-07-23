@@ -36,7 +36,8 @@ const LiveView = ({ cameraId }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errored, nonce]);
 
-  const streamSrc = `${cameraStreamUrl(cameraId)}?t=${nonce}`;
+  const streamBase = cameraStreamUrl(cameraId);
+  const streamSrc = `${streamBase}${streamBase.includes("?") ? "&" : "?"}t=${nonce}`;
 
   return (
     <Box
