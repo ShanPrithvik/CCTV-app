@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Button, Chip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Stack,
+} from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { cameraStreamUrl } from "../api/config";
 
@@ -43,11 +49,11 @@ const LiveView = ({ cameraId }) => {
     <Box
       sx={{
         position: "relative",
-        borderRadius: 2,
+        borderRadius: 2.5,
         overflow: "hidden",
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "black",
+        bgcolor: "#030506",
         aspectRatio: "16 / 9",
         display: "flex",
         alignItems: "center",
@@ -62,21 +68,37 @@ const LiveView = ({ cameraId }) => {
             alt={`Live view for camera ${cameraId}`}
             onLoad={() => setLoaded(true)}
             onError={() => setErrored(true)}
-            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+            }}
           />
           {!loaded && (
-            <Typography
-              variant="caption"
-              sx={{ position: "absolute", color: "white", opacity: 0.8 }}
+            <Stack
+              alignItems="center"
+              spacing={1.5}
+              sx={{ position: "absolute", color: "white" }}
             >
-              Connecting to live feed...
-            </Typography>
+              <CircularProgress size={22} thickness={3} color="inherit" />
+              <Typography variant="caption" sx={{ opacity: 0.68 }}>
+                Negotiating stream
+              </Typography>
+            </Stack>
           )}
         </>
       ) : (
         <Box sx={{ textAlign: "center", color: "white", p: 2 }}>
-          <Typography variant="body2" sx={{ mb: 1.5 }}>
-            No live stream yet. Start a detection rule for this camera, then retry.
+          <Typography variant="h6" sx={{ mb: 0.75 }}>
+            Stream unavailable
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ mb: 2, color: "rgba(255,255,255,.6)", maxWidth: 420 }}
+          >
+            A detection rule may need to be running before annotated frames are
+            published.
           </Typography>
           <Button
             size="small"
@@ -89,12 +111,53 @@ const LiveView = ({ cameraId }) => {
           </Button>
         </Box>
       )}
-      <Chip
-        label="LIVE"
-        color="error"
-        size="small"
-        sx={{ position: "absolute", top: 8, left: 8, fontWeight: 700 }}
-      />
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 0.8,
+          px: 1,
+          py: 0.55,
+          borderRadius: 1.5,
+          bgcolor: "rgba(3,5,6,.68)",
+          border: "1px solid rgba(255,255,255,.1)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <Box
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            bgcolor: errored
+              ? "error.main"
+              : loaded
+                ? "success.main"
+                : "warning.main",
+          }}
+        />
+        <Typography
+          variant="caption"
+          sx={{
+            color: "rgba(255,255,255,.82)",
+            fontWeight: 700,
+            fontSize: 10,
+            letterSpacing: ".08em",
+          }}
+        >
+          {errored ? "OFFLINE" : loaded ? "LIVE" : "CONNECTING"}
+        </Typography>
+      </Box>
+      <Box role="status" aria-live="polite" className="visually-hidden">
+        {errored
+          ? "Live stream unavailable"
+          : loaded
+            ? "Live stream connected"
+            : "Connecting to live stream"}
+      </Box>
     </Box>
   );
 };
