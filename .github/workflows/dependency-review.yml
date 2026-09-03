@@ -9,7 +9,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   review:
@@ -18,7 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/setup-node@v4
         with:
-          fail-on-severity: high
-          comment-summary-in-pr: true
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      # actions/dependency-review-action needs GitHub's Dependency graph, which
+      # is disabled for this repository, so it fails with "Dependency review is
+      # not supported on this repository". npm audit checks the dependencies
+      # that ship in the bundle against the npm advisory database instead.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
