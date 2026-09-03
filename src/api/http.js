@@ -3,6 +3,7 @@ import { API_KEY, API_URL } from "./config";
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
@@ -47,6 +48,14 @@ api.delete = function(url, config) {
     return originalDelete(`${API_URL}/${url.replace(/^\/+/, "")}`, config);
   }
   return originalDelete(url, config);
+};
+
+const originalPatch = api.patch.bind(api);
+api.patch = function(url, data, config) {
+  if (typeof url === "string" && url.startsWith("http://") === false && url.startsWith("https://") === false && API_URL) {
+    return originalPatch(`${API_URL}/${url.replace(/^\/+/, "")}`, data, config);
+  }
+  return originalPatch(url, data, config);
 };
 
 // Tokens expire after 12h. Without this, a session that expires while the tab

@@ -1,15 +1,86 @@
-/* Minimal, modern base to let MUI theme drive the visuals */
-.App {
-  text-align: left;
-  min-height: 100vh;
-}
-
-/* Subtle link styling to match theme accents */
-.App a {
-  color: inherit;
+.skip-link {
+  position: fixed;
+  z-index: 2000;
+  top: 12px;
+  left: 12px;
+  padding: 10px 14px;
+  color: #071017;
+  background: #b8ecfa;
+  border-radius: 10px;
+  font-weight: 650;
   text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 160ms ease;
 }
 
-.App a:hover {
-  text-decoration: underline;
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.brand-orbit {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(116, 217, 247, 0.22);
+  border-radius: 50%;
+  animation: orbit-pulse 2.4s ease-in-out infinite;
+}
+
+.brand-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(116, 217, 247, 0.35);
+  border-radius: 50%;
+}
+
+.brand-orbit-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #74d9f7;
+  box-shadow: 0 0 18px rgba(116, 217, 247, 0.65);
+  transform: translate(-50%, -50%);
+}
+
+@keyframes orbit-pulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.surface-enter {
+  animation: surface-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

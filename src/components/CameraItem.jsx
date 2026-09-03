@@ -1,250 +1,214 @@
 import React, { useState } from "react";
-import { saveCamera, deleteCamera } from "../api/camerasApi";
+import { deleteCamera } from "../api/camerasApi";
 import {
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Chip,
-  Tooltip,
-  InputAdornment,
-  Typography,
   Box,
+  Button,
+  Chip,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
 } from "@mui/material";
-import SaveIcon from "@mui/icons-material/Save";
-import SettingsIcon from "@mui/icons-material/Settings";
-import DeleteIcon from "@mui/icons-material/Delete";
-import LinkIcon from "@mui/icons-material/Link";
-import VideocamIcon from "@mui/icons-material/Videocam";
+import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
+import CameraOutlinedIcon from "@mui/icons-material/CameraOutlined";
 import { useNavigate } from "react-router-dom";
-import ToastNotification from "./ToastNotification";
 import LiveView from "./LiveView";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import { StatusDot, Surface } from "./ui/Surface";
 
-const CameraItem = ({ camera, setCameras, cameras, canManage = true }) => {
-  const [name, setName] = useState(camera.camera_name || "");
-  const [rtsp, setRtsp] = useState(camera.rtsp_url);
+const CameraItem = ({ camera, canManage = true, onDeleted, onNotify }) => {
   const [showLiveView, setShowLiveView] = useState(false);
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
-  const validateRtspUrl = (url) => {
-    if (!url || !url.trim()) return false;
-    const trimmedUrl = url.trim();
-    const rtspRegex = /^rtsp:\/\/[a-zA-Z0-9.-]+(?::\d+)?\/[a-zA-Z0-9._/-]+$/;
-    if (!rtspRegex.test(trimmedUrl)) return false;
+  const endpointLabel = (() => {
     try {
-      const parsedUrl = new URL(trimmedUrl);
-      return parsedUrl.protocol === "rtsp:";
+      const parsed = new URL(camera.rtsp_url);
+      return `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ""}${parsed.pathname}`;
     } catch {
-      return false;
+      return "RTSP endpoint";
     }
-  };
-
-  const handleSave = async () => {
-    if (!validateRtspUrl(rtsp)) {
-      setNotification({
-        open: true,
-        message: "Invalid RTSP URL. Please enter a valid RTSP URL",
-        severity: "error",
-      });
-      return;
-    }
-    try {
-      const newCamera = await saveCamera(rtsp, name);
-      const updatedCameras = cameras.map((c) => {
-        if (c.id && c.id === camera.id) return newCamera.camera;
-        if (c.tempId && camera.tempId && c.tempId === camera.tempId) return newCamera.camera;
-        return c;
-      });
-      setCameras(updatedCameras);
-      setNotification({
-        open: true,
-        message: "Camera saved successfully!",
-        severity: "success",
-      });
-    } catch (error) {
-      console.error("Error saving camera:", error);
-      setNotification({
-        open: true,
-        message: "Failed to save camera",
-        severity: "error",
-      });
-    }
-  };
+  })();
 
   const handleDelete = async () => {
+    setDeleting(true);
     try {
       await deleteCamera(camera.id);
-      setCameras(cameras.filter((c) => c.id !== camera.id));
-      setNotification({
-        open: true,
-        message: "Camera removed successfully",
-        severity: "success",
-      });
+      onDeleted(camera.id);
+      onNotify("Camera removed from this organization");
     } catch (error) {
-      console.error("Error deleting camera:", error);
-      setNotification({
-        open: true,
-        message: "Failed to delete camera",
-        severity: "error",
-      });
+      onNotify(
+        error?.response?.data?.error || "Camera could not be removed",
+        "error",
+      );
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
     }
   };
-
-  const handleRuleConfig = () => {
-    navigate(`/cameras/${camera.id}/rule_config`, { state: { cameraName: camera.camera_name } });
-  };
-
-  const isNew = !!camera.isNew;
 
   return (
     <>
-      <Card
+      <Surface
+        component="article"
         sx={{
-          p: 2,
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          transition: "transform .05s ease, box-shadow .2s ease",
-          "&:hover": { boxShadow: 3 },
+          height: "100%",
+          transition: "border-color 180ms ease, transform 180ms ease",
+          "&:hover": {
+            borderColor: "rgba(116,217,247,.22)",
+            transform: "translateY(-1px)",
+          },
         }}
       >
-        <CardContent sx={{ p: 2 }}>
-          <Stack spacing={2}>
+        <Box sx={{ p: { xs: 2.25, sm: 2.75 } }}>
+          <Stack spacing={2.5}>
             <Stack
               direction="row"
-              spacing={1.5}
-              alignItems="center"
+              alignItems="flex-start"
               justifyContent="space-between"
+              spacing={2}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {isNew ? (name?.trim() || "New Camera") : (camera.camera_name || "Camera")}
-                </Typography>
+              <Stack direction="row" spacing={1.5} sx={{ minWidth: 0 }}>
+                <Box
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 2.5,
+                    flexShrink: 0,
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: "rgba(116,217,247,.06)",
+                    color: "primary.main",
+                    border: "1px solid rgba(116,217,247,.13)",
+                  }}
+                >
+                  <CameraOutlinedIcon fontSize="small" />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="h4"
+                    component="h2"
+                    noWrap
+                    title={camera.camera_name || "Camera"}
+                  >
+                    {camera.camera_name || "Unnamed camera"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    noWrap
+                    sx={{ display: "block", mt: 0.4 }}
+                    title={endpointLabel}
+                  >
+                    {endpointLabel}
+                  </Typography>
+                </Box>
+              </Stack>
+              <Stack direction="row" spacing={0.5} alignItems="center">
                 <Chip
-                  label={isNew ? "New" : "Saved"}
-                  color={isNew ? "warning" : "success"}
+                  label={`ID ${camera.id}`}
                   size="small"
-                  variant={isNew ? "filled" : "outlined"}
+                  variant="outlined"
                 />
-                {!isNew && camera.id && (
-                  <Chip
-                    label={`ID: ${camera.id}`}
-                    size="small"
-                    variant="outlined"
-                  />
-                )}
-                {!isNew && !canManage && (
-                  <Chip
-                    label="View-only"
-                    size="small"
-                    variant="outlined"
-                    color="info"
-                  />
+                {canManage && (
+                  <Tooltip title="Remove camera">
+                    <IconButton
+                      aria-label={`Remove ${camera.camera_name || "camera"}`}
+                      size="small"
+                      color="error"
+                      onClick={() => setConfirmOpen(true)}
+                    >
+                      <DeleteOutlineRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 )}
               </Stack>
             </Stack>
 
-            {isNew && (
-              <>
-                <TextField
-                  label="Camera Name"
-                  placeholder="e.g., Entrance Lobby"
-                  variant="outlined"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  autoFocus
-                  fullWidth
-                  size="small"
-                />
-
-                <TextField
-                  label="RTSP URL"
-                  placeholder="rtsp://username:password@host:554/stream"
-                  variant="outlined"
-                  value={rtsp}
-                  onChange={(e) => setRtsp(e.target.value)}
-                  fullWidth
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LinkIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </>
-            )}
-
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {isNew ? (
-                <Tooltip title="Save this camera endpoint">
-                  <span>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      startIcon={<SaveIcon />}
-                      onClick={handleSave}
-                      disabled={!rtsp || !name.trim()}
-                    >
-                      Save
-                    </Button>
-                  </span>
-                </Tooltip>
-              ) : (
-                <>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+                pt: 2,
+                borderTop: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <StatusDot
+                label={
+                  showLiveView
+                    ? "Feed viewport open"
+                    : canManage
+                      ? "Ready for monitoring"
+                      : "View access"
+                }
+                color={showLiveView ? "success.main" : "text.secondary"}
+                pulse={showLiveView}
+              />
+              <Stack direction="row" spacing={1}>
+                {canManage && (
                   <Button
-                    variant={showLiveView ? "contained" : "outlined"}
-                    color="primary"
-                    startIcon={<VideocamIcon />}
-                    onClick={() => setShowLiveView((v) => !v)}
-                    sx={{ whiteSpace: "nowrap", minWidth: 120, flexShrink: 0 }}
+                    size="small"
+                    color="inherit"
+                    startIcon={<TuneRoundedIcon />}
+                    onClick={() =>
+                      navigate(`/cameras/${camera.id}/rule_config`, {
+                        state: { cameraName: camera.camera_name },
+                      })
+                    }
                   >
-                    {showLiveView ? "Hide Live" : "Live View"}
+                    Rules
                   </Button>
-                  {canManage && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="secondary"
-                        startIcon={<SettingsIcon />}
-                        onClick={handleRuleConfig}
-                        sx={{ whiteSpace: "nowrap", minWidth: 130, flexShrink: 0 }}
-                      >
-                        Rule Config
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<DeleteIcon />}
-                        onClick={handleDelete}
-                        sx={{ whiteSpace: "nowrap", minWidth: 110, flexShrink: 0 }}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
+                )}
+                <Button
+                  size="small"
+                  variant={showLiveView ? "contained" : "outlined"}
+                  startIcon={
+                    showLiveView ? (
+                      <KeyboardArrowUpRoundedIcon />
+                    ) : (
+                      <VideocamOutlinedIcon />
+                    )
+                  }
+                  onClick={() => setShowLiveView((visible) => !visible)}
+                  aria-expanded={showLiveView}
+                >
+                  {showLiveView ? "Close" : "Live view"}
+                </Button>
+              </Stack>
             </Box>
-
-            {!isNew && showLiveView && <LiveView cameraId={camera.id} />}
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
 
-      <ToastNotification
-        open={notification.open}
-        message={notification.message}
-        severity={notification.severity}
-        onClose={() => setNotification({ ...notification, open: false })}
+        {showLiveView && (
+          <Box
+            sx={{
+              borderTop: "1px solid",
+              borderColor: "divider",
+              p: { xs: 1, sm: 1.5 },
+              bgcolor: "rgba(0,0,0,.16)",
+            }}
+          >
+            <LiveView cameraId={camera.id} />
+          </Box>
+        )}
+      </Surface>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Remove camera?"
+        description={`This removes ${camera.camera_name || "this camera"} and its endpoint from the organization. This action cannot be undone.`}
+        confirmLabel="Remove camera"
+        destructive
+        busy={deleting}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDelete}
       />
     </>
   );
