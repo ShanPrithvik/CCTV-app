@@ -50,7 +50,7 @@ const LoginPage = () => {
         }
         await acceptInvite(email, name, password, token);
       }
-      navigate("/cameras");
+      navigate("/operations");
     } catch (err) {
       setError(err?.response?.data?.error || "Authentication failed");
     }

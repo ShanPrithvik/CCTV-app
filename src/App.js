@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate, Link } from "react-ro
 import { ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import CamerasPage from "./pages/CamerasPage";
+import OperationsDashboard from "./pages/OperationsDashboard";
 import RuleConfigPage from "./pages/RuleConfigPage";
 import UsersManagementPage from "./pages/UsersManagementPage";
 import LoginPage from "./pages/LoginPage";
@@ -73,6 +74,17 @@ const AppLayout = () => {
             </Typography>
             {user && (
               <>
+                <Button color="inherit" component={Link} to="/operations">
+                  Operations
+                </Button>
+                <Button color="inherit" component={Link} to="/cameras">
+                  Cameras
+                </Button>
+                {isAdmin && (
+                  <Button color="inherit" component={Link} to="/users">
+                    Users
+                  </Button>
+                )}
                 <Typography variant="body2" sx={{ mr: 2 }}>
                   {user.name}
                 </Typography>
@@ -94,14 +106,6 @@ const AppLayout = () => {
                 </Button>
               </>
             )}
-            <Button color="inherit" component={Link} to="/cameras">
-              Cameras
-            </Button>
-            {isAdmin && (
-              <Button color="inherit" component={Link} to="/users">
-                Users
-              </Button>
-            )}
           </Toolbar>
         </AppBar>
 
@@ -109,6 +113,14 @@ const AppLayout = () => {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/accept-invite" element={<LoginPage />} />
+            <Route
+              path="/operations"
+              element={
+                <ProtectedRoute>
+                  <OperationsDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/cameras"
               element={
@@ -133,7 +145,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/cameras" replace />} />
+            <Route path="*" element={<Navigate to="/operations" replace />} />
           </Routes>
         </Box>
       </Router>
