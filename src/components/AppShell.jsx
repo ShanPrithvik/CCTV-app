@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import CameraOutlinedIcon from "@mui/icons-material/CameraOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
 import RadarRoundedIcon from "@mui/icons-material/RadarRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
@@ -68,6 +69,7 @@ const AppShell = ({ children }) => {
   const [profileAnchor, setProfileAnchor] = useState(null);
   const [switchingOrg, setSwitchingOrg] = useState(false);
 
+  const operationsActive = location.pathname.startsWith("/operations");
   const cameraActive = location.pathname.startsWith("/cameras");
   const usersActive = location.pathname.startsWith("/users");
 
@@ -77,13 +79,19 @@ const AppShell = ({ children }) => {
     setSwitchingOrg(true);
     try {
       await switchOrg(organizationId);
-      navigate("/cameras");
+      navigate("/operations");
     } finally {
       setSwitchingOrg(false);
     }
   };
 
   const navItems = [
+    {
+      label: "Operations",
+      icon: <NotificationsActiveOutlinedIcon />,
+      active: operationsActive,
+      path: "/operations",
+    },
     {
       label: "Cameras",
       icon: <CameraOutlinedIcon />,

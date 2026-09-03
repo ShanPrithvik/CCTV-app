@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import CamerasPage from "./pages/CamerasPage";
+import OperationsDashboard from "./pages/OperationsDashboard";
 import RuleConfigPage from "./pages/RuleConfigPage";
 import UsersManagementPage from "./pages/UsersManagementPage";
 import LoginPage from "./pages/LoginPage";
@@ -32,14 +33,14 @@ const ProtectedRoute = ({ children }) => {
 
 const ManagementRoute = ({ children }) => {
   const { canManage } = usePermissions();
-  if (!canManage) return <Navigate to="/cameras" replace />;
+  if (!canManage) return <Navigate to="/operations" replace />;
   return children;
 };
 
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <AppLoading />;
-  if (user) return <Navigate to="/cameras" replace />;
+  if (user) return <Navigate to="/operations" replace />;
   return children;
 };
 
@@ -85,6 +86,14 @@ function App() {
               }
             />
             <Route
+              path="/operations"
+              element={
+                <ProtectedRoute>
+                  <OperationsDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/cameras"
               element={
                 <ProtectedRoute>
@@ -112,7 +121,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/cameras" replace />} />
+            <Route path="*" element={<Navigate to="/operations" replace />} />
           </Routes>
         </Router>
       </AuthProvider>
