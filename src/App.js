@@ -1,17 +1,11 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from "react-router-dom";
+import { ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import CamerasPage from "./pages/CamerasPage";
 import RuleConfigPage from "./pages/RuleConfigPage";
-import {
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Box,
-} from "@mui/material";
+import UsersManagementPage from "./pages/UsersManagementPage";
+import LoginPage from "./pages/LoginPage";
 import "./App.css";
 
 const theme = createTheme({
@@ -56,7 +50,18 @@ const theme = createTheme({
   },
 });
 
-function App() {
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const AppLayout = () => {
+  const { user, signOut, memberships, activeOrgId, switchOrg } = useAuth();
+  const currentMembership = memberships.find((m) => m.organization_id === activeOrgId);
+  const isAdmin = currentMembership && ["Owner", "Admin"].includes(currentMembership.role);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -66,21 +71,81 @@ function App() {
             <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
               Smart CCTV Console
             </Typography>
+            {user && (
+              <>
+                <Typography variant="body2" sx={{ mr: 2 }}>
+                  {user.name}
+                </Typography>
+                {memberships.length > 1 && (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    sx={{ mr: 1 }}
+                    onClick={() => {
+                      const next = memberships.find((m) => m.organization_id !== activeOrgId);
+                      if (next) switchOrg(next.organization_id);
+                    }}
+                  >
+                    Switch Org
+                  </Button>
+                )}
+                <Button color="inherit" onClick={signOut}>
+                  Sign out
+                </Button>
+              </>
+            )}
             <Button color="inherit" component={Link} to="/cameras">
               Cameras
             </Button>
+            {isAdmin && (
+              <Button color="inherit" component={Link} to="/users">
+                Users
+              </Button>
+            )}
           </Toolbar>
         </AppBar>
 
         <Box sx={{ p: 2 }}>
           <Routes>
-            <Route path="/cameras" element={<CamerasPage />} />
-            <Route path="/cameras/:cameraId/rule_config" element={<RuleConfigPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/accept-invite" element={<LoginPage />} />
+            <Route
+              path="/cameras"
+              element={
+                <ProtectedRoute>
+                  <CamerasPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cameras/:cameraId/rule_config"
+              element={
+                <ProtectedRoute>
+                  <RuleConfigPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <UsersManagementPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<Navigate to="/cameras" replace />} />
           </Routes>
         </Box>
       </Router>
     </ThemeProvider>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppLayout />
+    </AuthProvider>
   );
 }
 
