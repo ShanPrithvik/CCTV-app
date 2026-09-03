@@ -3,13 +3,18 @@ import CameraItem from "../components/CameraItem";
 import { fetchCameras } from "../api/camerasApi";
 import { Button, Container, Grid, Typography, Paper, Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { useAuth } from "../contexts/AuthContext";
 
 const CamerasPage = () => {
   const [cameras, setCameras] = useState([]);
+  const { user, memberships } = useAuth();
+  const activeOrgId = user?.active_organization_id || memberships[0]?.organization_id || null;
+  const currentMembership = memberships.find((m) => m.organization_id === activeOrgId);
+  const canManage = currentMembership && ["Owner", "Admin"].includes(currentMembership.role);
 
   useEffect(() => {
     fetchCameras().then(setCameras).catch(console.error);
-  }, []);
+  }, [activeOrgId]);
 
   const handleAddCamera = () => {
     const tempId = `tmp_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -39,22 +44,24 @@ const CamerasPage = () => {
           Manage your camera endpoints and configure detection rules.
         </Typography>
         <Box sx={{ textAlign: "center", mt: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleAddCamera}
-            size="medium"
-          >
-            Add Camera
-          </Button>
+          {canManage && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleAddCamera}
+              size="medium"
+            >
+              Add Camera
+            </Button>
+          )}
         </Box>
       </Paper>
 
       <Grid container spacing={2}>
         {cameras.map((camera, index) => (
-          <Grid item xs={12} key={index}>
-            <CameraItem camera={camera} setCameras={setCameras} cameras={cameras} />
+          <Grid item xs={12} key={camera.id || index}>
+            <CameraItem camera={camera} setCameras={setCameras} cameras={cameras} canManage={canManage} />
           </Grid>
         ))}
       </Grid>

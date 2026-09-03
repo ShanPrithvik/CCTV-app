@@ -15,8 +15,15 @@ const withApiKey = (url) => {
   return `${url}${sep}api_key=${encodeURIComponent(API_KEY)}`;
 };
 
+const withAuth = (url) => {
+  const token = localStorage.getItem("cctv_token");
+  if (!token) return withApiKey(url);
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+};
+
 export const cameraStreamUrl = (cameraId) =>
-  withApiKey(`${CAMERA_BASE_URL}/${cameraId}/stream`);
+  withAuth(withApiKey(`${CAMERA_BASE_URL}/${cameraId}/stream`));
 
 export const cameraViewUrl = (cameraName) =>
   withApiKey(`${API_URL}/camera-view/${cameraName}.png`);

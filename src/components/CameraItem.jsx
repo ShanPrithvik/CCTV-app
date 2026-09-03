@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import ToastNotification from "./ToastNotification";
 import LiveView from "./LiveView";
 
-const CameraItem = ({ camera, setCameras, cameras }) => {
+const CameraItem = ({ camera, setCameras, cameras, canManage = true }) => {
   const [name, setName] = useState(camera.camera_name || "");
   const [rtsp, setRtsp] = useState(camera.rtsp_url);
   const [showLiveView, setShowLiveView] = useState(false);
@@ -35,10 +35,6 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
   const validateRtspUrl = (url) => {
     if (!url || !url.trim()) return false;
     const trimmedUrl = url.trim();
-    // Regex for basic RTSP URL validation: rtsp://host[:port]/path
-    // Host: alphanumeric, ., -
-    // Port: optional digits
-    // Path: alphanumeric, ., _, /, -
     const rtspRegex = /^rtsp:\/\/[a-zA-Z0-9.-]+(?::\d+)?\/[a-zA-Z0-9._/-]+$/;
     if (!rtspRegex.test(trimmedUrl)) return false;
     try {
@@ -143,39 +139,49 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
                     variant="outlined"
                   />
                 )}
+                {!isNew && !canManage && (
+                  <Chip
+                    label="View-only"
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                  />
+                )}
               </Stack>
             </Stack>
 
-            <TextField
-              label="Camera Name"
-              placeholder="e.g., Entrance Lobby"
-              variant="outlined"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!isNew}
-              required
-              autoFocus
-              fullWidth
-              size="small"
-            />
+            {isNew && (
+              <>
+                <TextField
+                  label="Camera Name"
+                  placeholder="e.g., Entrance Lobby"
+                  variant="outlined"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoFocus
+                  fullWidth
+                  size="small"
+                />
 
-            <TextField
-              label="RTSP URL"
-              placeholder="rtsp://username:password@host:554/stream"
-              variant="outlined"
-              value={rtsp}
-              onChange={(e) => setRtsp(e.target.value)}
-              disabled={!isNew}
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LinkIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
+                <TextField
+                  label="RTSP URL"
+                  placeholder="rtsp://username:password@host:554/stream"
+                  variant="outlined"
+                  value={rtsp}
+                  onChange={(e) => setRtsp(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LinkIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </>
+            )}
 
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
               {isNew ? (
@@ -195,15 +201,6 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
               ) : (
                 <>
                   <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<SettingsIcon />}
-                    onClick={handleRuleConfig}
-                    sx={{ whiteSpace: "nowrap", minWidth: 130, flexShrink: 0 }}
-                  >
-                    Rule Config
-                  </Button>
-                  <Button
                     variant={showLiveView ? "contained" : "outlined"}
                     color="primary"
                     startIcon={<VideocamIcon />}
@@ -212,15 +209,28 @@ const CameraItem = ({ camera, setCameras, cameras }) => {
                   >
                     {showLiveView ? "Hide Live" : "Live View"}
                   </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={handleDelete}
-                    sx={{ whiteSpace: "nowrap", minWidth: 110, flexShrink: 0 }}
-                  >
-                    Remove
-                  </Button>
+                  {canManage && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<SettingsIcon />}
+                        onClick={handleRuleConfig}
+                        sx={{ whiteSpace: "nowrap", minWidth: 130, flexShrink: 0 }}
+                      >
+                        Rule Config
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleDelete}
+                        sx={{ whiteSpace: "nowrap", minWidth: 110, flexShrink: 0 }}
+                      >
+                        Remove
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </Box>
