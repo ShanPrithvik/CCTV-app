@@ -14,6 +14,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { fetchOperationsOverview, updateAlertStatus } from "../api/operationsApi";
+import { alertClipUrl } from "../api/config";
 import { useAuth } from "../contexts/AuthContext";
 import { PageHeader, StatePanel, Surface } from "../components/ui/Surface";
 
@@ -75,6 +76,7 @@ const OperationsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingAlertId, setUpdatingAlertId] = useState(null);
+  const [playingAlertId, setPlayingAlertId] = useState(null);
   const { activeOrgId } = useAuth();
 
   const loadOverview = useCallback(async ({ quiet = false } = {}) => {
@@ -261,6 +263,23 @@ const OperationsDashboard = () => {
                           {" · "}
                           {formatTime(alert.event.occurred_at)}
                         </Typography>
+                        {alert.event.has_clip && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<VideocamOutlinedIcon />}
+                            onClick={() =>
+                              setPlayingAlertId((current) =>
+                                current === alert.id ? null : alert.id,
+                              )
+                            }
+                            sx={{ alignSelf: "flex-start" }}
+                          >
+                            {playingAlertId === alert.id
+                              ? "Hide clip"
+                              : "Play clip"}
+                          </Button>
+                        )}
                       </Stack>
                       {alert.status === "NEW" && (
                         <Button
@@ -275,6 +294,20 @@ const OperationsDashboard = () => {
                         </Button>
                       )}
                     </Stack>
+                    {playingAlertId === alert.id && alert.event.has_clip && (
+                      <Box
+                        component="video"
+                        controls
+                        src={alertClipUrl(alert.id)}
+                        sx={{
+                          width: "100%",
+                          mt: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: "black",
+                          maxHeight: 280,
+                        }}
+                      />
+                    )}
                   </Box>
                 ))}
               </Stack>

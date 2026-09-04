@@ -27,3 +27,6 @@ export const cameraStreamUrl = (cameraId) =>
 
 export const cameraViewUrl = (cameraName) =>
   withApiKey(`${API_URL}/camera-view/${cameraName}.png`);
+
+export const alertClipUrl = (alertId) =>
+  withAuth(withApiKey(`${API_URL}/api/alerts/${alertId}/clip`));
