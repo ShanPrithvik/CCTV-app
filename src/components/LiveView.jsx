@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -9,38 +9,80 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { cameraStreamUrl } from "../api/config";
 
-// The backend's /stream endpoint gives up and closes the connection if no
-// detection task has published a frame within ~15s (see STREAM_IDLE_TIMEOUT
-// in camera_controller.py). That close is "graceful" (HTTP 200, generator
-// just ends), so the <img> tag never fires onError - it just silently stops
-// rendering. To recover automatically (e.g. if Live View was opened before
-// the rule's Celery task had started publishing), reconnect periodically.
-const AUTO_RECONNECT_MS = 12000;
+// A multipart/x-mixed-replace response never completes while frames are still
+// arriving, so `onLoad` is not a "connected" signal: Chromium fires it only
+// once the server closes the stream, Firefox fires it once per frame. Poll
+// naturalWidth instead, which turns non-zero as soon as the first part decodes.
+const LIVE_POLL_MS = 400;
+
+// Reconnect only while nothing has decoded yet - e.g. Live View was opened
+// before the rule's Celery task started publishing. Never tear down a stream
+// that is already rendering: browsers allow just six concurrent connections per
+// origin, and each abandoned MJPEG response holds one until it times out, which
+// starves the live view itself along with every other API call.
+const CONNECT_TIMEOUT_MS = 8000;
+
+// Below this gap, repeated `load` events mean per-frame semantics (Firefox)
+// rather than end-of-stream (Chromium).
+const PER_FRAME_LOAD_GAP_MS = 2000;
 
 // Simple MJPEG live view: a plain <img> pointed at the backend's streaming
 // endpoint. The backend publishes the latest annotated frame (ROI, boxes,
 // alert overlays) from whichever detection rule is running for this camera.
 const LiveView = ({ cameraId }) => {
+  const imgRef = useRef(null);
+  const lastLoadAtRef = useRef(0);
+  const perFrameLoadsRef = useRef(false);
   const [nonce, setNonce] = useState(0);
   const [errored, setErrored] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const handleRetry = () => {
     setErrored(false);
+    setLoaded(false);
     setNonce((n) => n + 1);
   };
 
-  useEffect(() => {
-    if (errored) return;
-    const interval = setInterval(() => {
+  const handleLoad = () => {
+    const now = Date.now();
+    const previous = lastLoadAtRef.current;
+    lastLoadAtRef.current = now;
+
+    if (previous && now - previous < PER_FRAME_LOAD_GAP_MS) {
+      perFrameLoadsRef.current = true;
+    }
+    if (perFrameLoadsRef.current) {
+      setLoaded(true);
+      return;
+    }
+
+    // Chromium only gets here when the backend closed the response, which it
+    // does once the detection task stops publishing frames. Reconnect so the
+    // feed picks back up if the task restarts.
+    if (imgRef.current?.naturalWidth > 0) {
       setLoaded(false);
       setNonce((n) => n + 1);
-    }, AUTO_RECONNECT_MS);
+      return;
+    }
+    setLoaded(true);
+  };
+
+  useEffect(() => {
+    if (errored) return undefined;
+    const startedAt = Date.now();
+    const interval = setInterval(() => {
+      if (imgRef.current?.naturalWidth > 0) {
+        setLoaded(true);
+        return;
+      }
+      if (Date.now() - startedAt > CONNECT_TIMEOUT_MS) {
+        setNonce((n) => n + 1);
+      }
+    }, LIVE_POLL_MS);
     return () => clearInterval(interval);
-    // Re-arm the timer whenever we (re)connect, so it always waits a full
-    // AUTO_RECONNECT_MS from the most recent connection attempt.
+    // Restart the watchdog on every (re)connection attempt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errored, nonce]);
+  }, [errored, nonce, cameraId]);
 
   const streamBase = cameraStreamUrl(cameraId);
   const streamSrc = `${streamBase}${streamBase.includes("?") ? "&" : "?"}t=${nonce}`;
@@ -63,10 +105,11 @@ const LiveView = ({ cameraId }) => {
       {!errored ? (
         <>
           <img
-            key={nonce}
+            key={`${cameraId}-${nonce}`}
+            ref={imgRef}
             src={streamSrc}
             alt={`Live view for camera ${cameraId}`}
-            onLoad={() => setLoaded(true)}
+            onLoad={handleLoad}
             onError={() => setErrored(true)}
             style={{
               width: "100%",
